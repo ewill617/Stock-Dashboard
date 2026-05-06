@@ -54,11 +54,6 @@ st.markdown("""
         padding: 10px 30px !important;
         font-weight: 600 !important;
     }
-    /* Clean up the dataframe view */
-    .stDataFrame {
-        background: rgba(255, 255, 255, 0.01);
-        border-radius: 16px;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -81,73 +76,22 @@ def get_data(ticker_symbol):
         t = yf.Ticker(ticker_symbol)
         info = t.info
         if 'shortName' not in info: return None
-
         bs = t.balance_sheet
         is_stmt = t.income_stmt
-        
-        # Financial Data Points
         total_assets = bs.loc['Total Assets'].iloc[0] if 'Total Assets' in bs.index else 0
         total_liab = bs.loc['Total Liabilities Net Minority Interest'].iloc[0] if 'Total Liabilities Net Minority Interest' in bs.index else 0
         asset_liab_ratio = total_assets / total_liab if total_liab > 0 else 0
-        
         net_income = is_stmt.loc['Net Income'].iloc[0] if 'Net Income' in is_stmt.index else 0
         total_debt = bs.loc['Total Debt'].iloc[0] if 'Total Debt' in bs.index else 0
         equity = bs.loc['Stockholders Equity'].iloc[0] if 'Stockholders Equity' in bs.index else 0
         roic = net_income / (total_debt + equity) if (total_debt + equity) > 0 else 0
-
         net_margin = info.get('profitMargins', 0)
         rev = info.get('totalRevenue', 1)
         fcf = info.get('freeCashflow', 0)
         fcf_margin = fcf / rev if rev > 0 else 0
         rev_growth = info.get('revenueGrowth', 0)
-
         return {
             "P/E Ratio": info.get('trailingPE', 0),
             "P/S Ratio": info.get('priceToSalesTrailing12Months', 0),
-            "Op Margin %": info.get('operatingMargins', 0) * 100,
-            "Net Margin %": net_margin * 100,
-            "FCF Margin %": fcf_margin * 100,
-            "Current Ratio": info.get('currentRatio', 0),
-            "Debt to Equity": info.get('debtToEquity', 0),
-            "Asset/Liab Ratio": asset_liab_ratio,
-            "Price/Book": info.get('priceToBook', 0),
-            "Rev Growth YoY %": rev_growth * 100,
-            "Rule of 40 %": (fcf_margin + rev_growth) * 100,
-            "FNR Percent": (net_margin + fcf_margin + rev_growth) * 100,
-            "ROE %": info.get('returnOnEquity', 0) * 100,
-            "ROIC %": roic * 100
-        }
-    except Exception:
-        return None
-
-# 5. UI Logic
-tickers = [t.strip().upper() for t in tickers_input.split(',') if t.strip()]
-
-if analyze_button or tickers:
-    with st.spinner(" "):
-        data_dict = {t: get_data(t) for t in tickers if get_data(t)}
-        valid_tickers = list(data_dict.keys())
+            "Op Margin %": info.get('operatingMargins
         
-        if not valid_tickers:
-            st.warning("SYSTEM OFFLINE: INVALID TARGET.")
-        elif len(valid_tickers) == 1:
-            t = valid_tickers[0]
-            d = data_dict[t]
-            st.markdown(f"<h1 style='color:#f8fafc;'>{t} <span style='font-size:18px; color:#64748b;'>Core Intelligence Report</span></h1>", unsafe_allow_html=True)
-            
-            st.write("### 💎 Profitability & Moat")
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("FNR %", f"{d['FNR Percent']:.2f}%")
-            col2.metric("Rule of 40", f"{d['Rule of 40 %']:.2f}%")
-            col3.metric("FCF Margin", f"{d['FCF Margin %']:.2f}%")
-            col4.metric("ROIC", f"{d['ROIC %']:.2f}%")
-
-            st.write("### 🛡️ Balance Sheet Health")
-            col5, col6, col7, col8 = st.columns(4)
-            col5.metric("Asset/Liab", f"{d['Asset/Liab Ratio']:.2f}")
-            col6.metric("Debt/Equity", f"{d['Debt to Equity']:.2f}")
-            col7.metric("Current Ratio", f"{d['Current Ratio']:.2f}")
-            col8.metric("Rev Growth", f"{d['Rev Growth YoY %']:.2f}%")
-        else:
-            df = pd.DataFrame(data_dict)
-            st.markdown("<h2 style='color:#f8fafc;'>Fleet Comparison Matrix</h2>", unsafe_allow

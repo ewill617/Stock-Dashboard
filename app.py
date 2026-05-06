@@ -3,82 +3,74 @@ import yfinance as yf
 import pandas as pd
 
 # 1. Page Configuration
-st.set_page_config(page_title="Terminal Screener", page_icon="💻", layout="wide")
+st.set_page_config(page_title="Quantitative Terminal", page_icon="📈", layout="wide")
 
-# 2. Inject Matrix CSS Theme
+# 2. Refined Professional Terminal CSS
 st.markdown("""
 <style>
-    /* Main Background */
+    /* Deep Slate Theme */
     .stApp {
-        background-color: #050505;
+        background-color: #0E1117;
     }
     
-    /* Global Font and Text Color */
+    /* Clean Professional Monospace */
     html, body, [class*="css"] {
-        font-family: 'Courier New', Courier, monospace !important;
-        color: #00FF41 !important;
-    }
-    h1, h2, h3, p, span, div, label {
-        color: #00FF41 !important;
-        font-family: 'Courier New', Courier, monospace !important;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
     }
     
-    /* The Search Bar */
-    .stTextInput input {
-        background-color: #000000 !important;
-        color: #00FF41 !important;
-        border: 2px solid #00FF41 !important;
-        box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
-        text-align: center;
-        font-size: 24px;
-        font-weight: bold;
+    /* Header & Metric Labels */
+    h1, h2, h3, [data-testid="stMetricLabel"] {
+        color: #808495 !important;
         text-transform: uppercase;
-        border-radius: 0px;
-    }
-    
-    /* The Execute Button */
-    .stButton>button {
-        background-color: #000000 !important;
-        color: #00FF41 !important;
-        border: 2px solid #00FF41 !important;
-        box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-        font-weight: bold;
-        font-size: 18px;
-        border-radius: 0px;
-        transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        background-color: #00FF41 !important;
-        color: #000000 !important;
-        box-shadow: 0 0 20px #00FF41;
+        letter-spacing: 1px;
     }
 
-    /* Metric Numbers */
+    /* Metric Values (Electric Blue) */
     [data-testid="stMetricValue"] {
-        color: #00FF41 !important;
-        text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
-    }
-    [data-testid="stMetricLabel"] {
-        color: #008F11 !important;
-        font-weight: bold;
+        color: #58A6FF !important;
+        font-size: 28px !important;
     }
     
-    /* Dataframe Container */
-    .stDataFrame {
-        border: 1px solid #00FF41;
+    /* Centered Search Bar Styling */
+    .stTextInput input {
+        background-color: #161B22 !important;
+        color: #C9D1D9 !important;
+        border: 1px solid #30363D !important;
+        border-radius: 4px;
+        text-align: center;
+        font-size: 20px;
+    }
+    
+    /* Action Button */
+    .stButton>button {
+        background-color: #21262D !important;
+        color: #58A6FF !important;
+        border: 1px solid #30363D !important;
+        border-radius: 4px;
+        font-weight: 600;
+        width: 100%;
+    }
+    .stButton>button:hover {
+        border-color: #58A6FF !important;
+        background-color: #161B22 !important;
+    }
+
+    /* Clean Dividers */
+    hr {
+        border-top: 1px solid #30363D !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Main Search Interface
-st.markdown("<h1 style='text-align: center; text-shadow: 0 0 20px #00FF41; margin-bottom: 0px;'>> SYSTEM_TERMINAL :: Moat_Screener.exe</h1>", unsafe_allow_html=True)
+# 3. Main Interface
+st.markdown("<h2 style='text-align: center;'>QUANTITATIVE_ANALYSIS_TERMINAL</h2>", unsafe_allow_html=True)
 st.write("")
 
-# Center the search bar using columns
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    tickers_input = st.text_input("", "MSFT, AAPL, GOOG", placeholder="ENTER TARGET DESIGNATIONS...")
-    analyze_button = st.button(">> EXECUTE_SCAN", use_container_width=True)
+# Centered Search
+c1, c2, c3 = st.columns([1, 2, 1])
+with c2:
+    tickers_input = st.text_input("", "MSFT, AAPL, NVDA", placeholder="ENTER TICKER SYMBOLS...")
+    analyze_button = st.button("RUN SYSTEM SCAN")
 
 st.divider()
 
@@ -107,52 +99,75 @@ def get_data(ticker_symbol):
     fcf = info.get('freeCashflow', 0)
     fcf_margin = fcf / rev if rev > 0 else 0
     rev_growth = info.get('revenueGrowth', 0)
-    eps = info.get('trailingEps', 0)
-    price = info.get('currentPrice', 1)
-    earnings_yield = (eps / price) if price > 0 else 0
 
     return {
         "P/E Ratio": info.get('trailingPE', 0),
         "P/S Ratio": info.get('priceToSalesTrailing12Months', 0),
-        "Forward P/E": info.get('forwardPE', 0),
         "Op Margin %": info.get('operatingMargins', 0) * 100,
         "Net Margin %": net_margin * 100,
         "FCF Margin %": fcf_margin * 100,
         "Current Ratio": info.get('currentRatio', 0),
         "Debt to Equity": info.get('debtToEquity', 0),
         "Asset/Liab Ratio": asset_liab_ratio,
-        "Price/Book (Value)": info.get('priceToBook', 0),
-        "Rev Per Share": info.get('revenuePerShare', 0),
-        "EPS": eps,
-        "Earnings Yield %": earnings_yield * 100,
+        "Price/Book": info.get('priceToBook', 0),
         "Rev Growth YoY %": rev_growth * 100,
         "Rule of 40 %": (fcf_margin + rev_growth) * 100,
         "FNR Percent": (net_margin + fcf_margin + rev_growth) * 100,
         "ROE %": info.get('returnOnEquity', 0) * 100,
-        "ROA %": info.get('returnOnAssets', 0) * 100,
         "ROIC %": roic * 100
     }
 
-# 5. Execution Logic
+# 5. UI Logic
 tickers = [t.strip().upper() for t in tickers_input.split(',') if t.strip()]
 
 if analyze_button or tickers:
-    with st.spinner("DECRYPTING FINANCIAL DATABASES..."):
-        data_dict = {t: get_data(t) for t in tickers if get_data(t)}
-        valid_tickers = list(data_dict.keys())
+    data_dict = {t: get_data(t) for t in tickers if get_data(t)}
+    valid_tickers = list(data_dict.keys())
+    
+    if not valid_tickers:
+        st.warning("NO DATA FOUND FOR TARGET TICKERS.")
+            
+    # SINGLE STOCK VIEW
+    elif len(valid_tickers) == 1:
+        t = valid_tickers[0]
+        d = data_dict[t]
+        st.markdown(f"### [ TARGET_PROFILE : {t} ]")
         
-        if not valid_tickers:
-            st.error("ERROR: TARGET NOT FOUND IN DATABASE.")
-            
-        # ==========================================
-        # UI MODE 1: SINGLE TIER TEAR SHEET
-        # ==========================================
-        elif len(valid_tickers) == 1:
-            t = valid_tickers[0]
-            data = data_dict[t]
-            
-            st.markdown(f"## > TARGET_ACQUIRED :: **{t}**")
-            
-            # Row 1: Moat & Profitability
-            st.markdown("### `[+] MOAT_AND_PROFITABILITY`")
-            m1, m2, m3,
+        # Grid layout for a clean terminal look
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("---")
+            st.metric("FNR %", f"{d['FNR Percent']:.2f}%")
+            st.metric("FCF Margin %", f"{d['FCF Margin %']:.2f}%")
+            st.metric("Rev Growth %", f"{d['Rev Growth YoY %']:.2f}%")
+        with col2:
+            st.markdown("---")
+            st.metric("Asset/Liab", f"{d['Asset/Liab Ratio']:.2f}")
+            st.metric("Debt/Equity", f"{d['Debt to Equity']:.2f}")
+            st.metric("Current Ratio", f"{d['Current Ratio']:.2f}")
+        with col3:
+            st.markdown("---")
+            st.metric("P/E Ratio", f"{d['P/E Ratio']:.2f}")
+            st.metric("P/S Ratio", f"{d['P/S Ratio']:.2f}")
+            st.metric("ROIC %", f"{d['ROIC %']:.2f}%")
+
+    # MULTI STOCK VIEW
+    else:
+        df = pd.DataFrame(data_dict)
+        st.markdown("### [ COMPARISON_MATRIX ]")
+        
+        # Formatted Display
+        display_df = df.apply(lambda x: x.map(lambda y: f"{y:.2f}"))
+        max_metrics = ["Op Margin %", "Net Margin %", "FCF Margin %", "Current Ratio", "Asset/Liab Ratio", "Rev Growth YoY %", "Rule of 40 %", "FNR Percent", "ROE %", "ROIC %"]
+        min_metrics = ["P/E Ratio", "P/S Ratio", "Debt to Equity", "Price/Book"]
+
+        for metric in df.index:
+            row_data = df.loc[metric]
+            best_ticker = None
+            if metric in max_metrics: best_ticker = row_data.idxmax()
+            elif metric in min_metrics: best_ticker = row_data.idxmin()
+
+            if best_ticker and pd.notna(row_data[best_ticker]):
+                display_df.at[metric, best_ticker] = f"🏆 {display_df.at[metric, best_ticker]}"
+        
+        st.dataframe(display_df, use_container_width=True, height=600)

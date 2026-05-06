@@ -70,4 +70,42 @@ def get_data(ticker_symbol):
         "EPS": eps,
         "Earnings Yield %": earnings_yield * 100,
         
-        # --- KEY METRICS
+        # --- KEY METRICS & CUSTOM ---
+        "Rev Growth YoY %": rev_growth * 100,
+        "Rule of 40 %": (fcf_margin + rev_growth) * 100,
+        "FNR Percent": (net_margin + fcf_margin + rev_growth) * 100,
+        
+        # --- MANAGEMENT EFFECTIVENESS ---
+        "ROE %": info.get('returnOnEquity', 0) * 100,
+        "ROA %": info.get('returnOnAssets', 0) * 100,
+        "ROIC %": roic * 100
+    }
+
+if st.sidebar.button("Run Analysis"):
+    with st.spinner("Deep scanning financial filings..."):
+        data_dict = {t: get_data(t) for t in tickers if get_data(t)}
+        
+        if data_dict:
+            df = pd.DataFrame(data_dict)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("🏆 Custom FNR Showdown")
+                fig1 = px.bar(x=df.columns, y=df.loc["FNR Percent"], text_auto='.2f', color=df.columns)
+                fig1.update_layout(xaxis_title="Ticker", yaxis_title="FNR (%)", showlegend=False)
+                st.plotly_chart(fig1, use_container_width=True)
+
+            with col2:
+                st.subheader("⚖️ Asset/Liability Health (Ideal > 1)")
+                fig2 = px.bar(x=df.columns, y=df.loc["Asset/Liab Ratio"], text_auto='.2f', color=df.columns)
+                fig2.update_layout(xaxis_title="Ticker", yaxis_title="Total Assets / Total Liab", showlegend=False)
+                st.plotly_chart(fig2, use_container_width=True)
+
+            st.subheader("The Full Fundamental Matrix")
+            
+            # Traffic Light Scheme: Green is Good, Yellow is Average, Red is Bad
+            styled_df = df.style.format("{:.2f}") \
+                .background_gradient(cmap='RdYlGn', subset=pd.IndexSlice[["Op Margin %", "Net Margin %", "FCF Margin %", "Rev Growth YoY %", "Rule of 40 %", "FNR Percent", "ROE %", "ROA %", "ROIC %", "Asset/Liab Ratio", "Earnings Yield %"], :]) \
+                .background_gradient(cmap='RdYlGn_r', subset=pd.IndexSlice[["P/E Ratio", "P/S Ratio", "Debt to Equity", "Price/Book (Value)"], :])
+            
+            st.dataframe(styled_df, use_container_width=True, height=600)

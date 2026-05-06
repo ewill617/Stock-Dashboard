@@ -17,7 +17,6 @@ def get_data(ticker_symbol):
     info = t.info
     if 'shortName' not in info: return None
 
-    # Deep dive into Balance Sheet and Cash Flow for hidden metrics
     try:
         bs = t.balance_sheet
         is_stmt = t.income_stmt
@@ -36,46 +35,33 @@ def get_data(ticker_symbol):
         asset_liab_ratio = 0
         roic = 0
 
-    # Margins and Growth
     net_margin = info.get('profitMargins', 0)
     rev = info.get('totalRevenue', 1)
     fcf = info.get('freeCashflow', 0)
     fcf_margin = fcf / rev if rev > 0 else 0
     rev_growth = info.get('revenueGrowth', 0)
     
-    # Per Share Data
     eps = info.get('trailingEps', 0)
     price = info.get('currentPrice', 1)
     earnings_yield = (eps / price) if price > 0 else 0
 
     return {
-        # --- STOCK PERFORMANCE ---
         "P/E Ratio": info.get('trailingPE', 0),
         "P/S Ratio": info.get('priceToSalesTrailing12Months', 0),
         "Forward P/E": info.get('forwardPE', 0),
-        
-        # --- INCOME STATEMENT ---
         "Op Margin %": info.get('operatingMargins', 0) * 100,
         "Net Margin %": net_margin * 100,
         "FCF Margin %": fcf_margin * 100,
-        
-        # --- BALANCE SHEET & CAPITAL ---
         "Current Ratio": info.get('currentRatio', 0),
         "Debt to Equity": info.get('debtToEquity', 0),
         "Asset/Liab Ratio": asset_liab_ratio,
         "Price/Book (Value)": info.get('priceToBook', 0),
-        
-        # --- PER SHARE DATA ---
         "Rev Per Share": info.get('revenuePerShare', 0),
         "EPS": eps,
         "Earnings Yield %": earnings_yield * 100,
-        
-        # --- KEY METRICS & CUSTOM ---
         "Rev Growth YoY %": rev_growth * 100,
         "Rule of 40 %": (fcf_margin + rev_growth) * 100,
         "FNR Percent": (net_margin + fcf_margin + rev_growth) * 100,
-        
-        # --- MANAGEMENT EFFECTIVENESS ---
         "ROE %": info.get('returnOnEquity', 0) * 100,
         "ROA %": info.get('returnOnAssets', 0) * 100,
         "ROIC %": roic * 100
@@ -88,6 +74,7 @@ if st.sidebar.button("Run Analysis"):
         if data_dict:
             df = pd.DataFrame(data_dict)
             
+            # --- CHARTS ---
             col1, col2 = st.columns(2)
             with col1:
                 st.subheader("🏆 Custom FNR Showdown")
@@ -103,9 +90,30 @@ if st.sidebar.button("Run Analysis"):
 
             st.subheader("The Full Fundamental Matrix")
             
-            # Traffic Light Scheme: Green is Good, Yellow is Average, Red is Bad
-            styled_df = df.style.format("{:.2f}") \
-                .background_gradient(cmap='RdYlGn', subset=pd.IndexSlice[["Op Margin %", "Net Margin %", "FCF Margin %", "Rev Growth YoY %", "Rule of 40 %", "FNR Percent", "ROE %", "ROA %", "ROIC %", "Asset/Liab Ratio", "Earnings Yield %"], :]) \
-                .background_gradient(cmap='RdYlGn_r', subset=pd.IndexSlice[["P/E Ratio", "P/S Ratio", "Debt to Equity", "Price/Book (Value)"], :])
+            # --- TROPHY ICON LOGIC ---
+            # Format all numbers to 2 decimal places as strings
+            display_df = df.apply(lambda x: x.map(lambda y: f"{y:.2f}"))
             
-            st.dataframe(styled_df, use_container_width=True, height=600)
+            # Define which metrics want high numbers vs low numbers
+            max_metrics = ["Op Margin %", "Net Margin %", "FCF Margin %", "Current Ratio", "Asset/Liab Ratio", "Rev Per Share", "EPS", "Earnings Yield %", "Rev Growth YoY %", "Rule of 40 %", "FNR Percent", "ROE %", "ROA %", "ROIC %"]
+            min_metrics = ["P/E Ratio", "P/S Ratio", "Forward P/E", "Debt to Equity", "Price/Book (Value)"]
+
+            # Loop through rows to find the winner and add the trophy
+            for metric in df.index:
+                row_data = df.loc[metric]
+                best_ticker = None
+                
+                if metric in max_metrics:
+                    best_ticker = row_data.idxmax()
+                elif metric in min_metrics:
+                    best_ticker = row_data.idxmin()
+
+                if best_ticker and pd.notna(row_data[best_ticker]):
+                    # Append the trophy to the winning cell
+                    display_df.at[metric, best_ticker] = f"🏆 {display_df.at[metric, best_ticker]}"
+            
+            # Render the clean table
+            st.dataframe(display_df, use_container_width=True, height=600)
+            
+        else:
+            st.error("Could not fetch data. Please check ticker symbols.")
